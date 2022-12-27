@@ -1,7 +1,7 @@
 package com.mycompany.jogodaforca;
 
 public class Mecanismo {
-    int numero_tentativas;
+    private int numero = 0;
     
     String escolha;
     String letra;
@@ -11,25 +11,22 @@ public class Mecanismo {
     
     public void setVerificarLista(String Letra){
         this.letra = Letra;
-        for (int i = 0; i<palavra.length; i++){
-            
-            if (letra.equalsIgnoreCase(palavra[i])){
+        for (int i = 0; i<palavra.length; i++){           
+            if (letra.equalsIgnoreCase(this.palavra[i])){
                 this.letra_encontrada [i] = letra;
             }
-            if (!letra.equalsIgnoreCase(palavra[i])){                
-                this.numero_tentativas = numero_tentativas++;                
+            else {                
+                this.numero = numero + 1;
             }
         }    
-    }
-    public void setVenceu(){
-        if (letra_encontrada.equals(palavra.length)){
-            System.out.println("voce ganhou !!");
-        }
-    }
+    }       
     public String [] getRetornarPalavra(){
         return this.letra_encontrada;
     }
     public int getNumero_Tentativas(){
         return this.numero_tentativas;
+    }
+    public int getRetornarNumero(){
+        return this.numero;
     }
 }
