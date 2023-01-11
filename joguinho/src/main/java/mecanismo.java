@@ -1,17 +1,5 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/**
- *
- * @author 20221198060008
- */
-public class mecanismo {
-    String escolha;
-    int numero_tentativas=0;
-    int acertou = 5;
+public class mecanismo { 
+    int tentativas = 0;
     private String letra;
     private String [] palavra = {"c","a","r","r","o"} ;
     private String [] Letrasencontrada;
@@ -19,28 +7,24 @@ public class mecanismo {
 
     public mecanismo() {
         this.Letrasencontrada = new String[]{"-", "-", "-", "-", "-"};
-        this.palavra = new String [] {"c","a","r","r","o"};
-        
+        this.palavra = new String [] {"c","a","r","r","o"};        
     }
 
     public void setVerificarLista(String letra){
-       // this.letra = Letra;
+        this.letra = letra;
         for (int i = 0; i<palavra.length; i++){
             if (letra.equalsIgnoreCase(palavra[i])){
-                this.Letrasencontrada [i] = letra;
-                this.acertou++;
-                
+                this.Letrasencontrada [i] = letra;                
+            }
+            else {
+                this.tentativas ++;
             }
         }
-    }
-   
-    public void setVenceu(){        
-         if (acertou == Letrasencontrada.length){
-             System.out.println("voce ganhou !!");
-        }
+    } 
     
-        
- }       
+    public int gettentativas(){
+        return tentativas;
+    }
     public String [] getRetornarPalavra(){
         return this.Letrasencontrada;
     }

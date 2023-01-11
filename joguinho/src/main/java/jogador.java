@@ -1,13 +1,15 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
-/**
- *
- * @author 20221198060008
- */
 public class jogador {
+    int numero_tentativas = 0;
+    String nome_jogador ;
     
+    public void setReceberNome(String nome){
+        this.nome_jogador = nome;
+    }
+    public void setNumeroTentativas(int Numero_tentativas){
+        this.numero_tentativas = Numero_tentativas;
+    }
+
+    public int getNumeroTentativas(){
+        return numero_tentativas;
+    }
 }
