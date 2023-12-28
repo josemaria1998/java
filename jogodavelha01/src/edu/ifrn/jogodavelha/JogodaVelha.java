@@ -5,8 +5,17 @@
  */
 package edu.ifrn.jogodavelha;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
+import javax.swing.text.BadLocationException;
 
 /**
  *
@@ -22,24 +31,50 @@ public class JogodaVelha extends javax.swing.JFrame {
      * 0 - Jogador O
      * 1 - Jogador X
      */
+    
+   private JButton[][] botoes;
+    private jogo jogo; // A classe que contém a lógica do jogo
     private int jogador;
-    private int jVelha[][];
+    
+    static Socket s;
+    static DataInputStream din;
+    static DataOutputStream dout;
     
     public JogodaVelha() {
-        initComponents();
-        inicializarVariaveis();
+      initComponents();
+        jogo = new jogo(); // Inicializa a lógica do jogo
+        inicializarJogo();
     }
+    
+private void atualizarInterface() {
+    int[][] tabuleiro = jogo.getTabuleiro();
+    JButton[][] botoes = {
+        {bt00, bt01, bt02},
+        {bt10, bt11, bt12},
+        {bt20, bt21, bt22}
+    };
 
-    public void inicializarVariaveis(){
-                jVelha = new int[3][3];
-        for(int i=0;i<jVelha.length;i++){
-            for(int j=0;j<jVelha.length;j++){
-                jVelha[i][j] = -1;
+    // Atualiza a interface com base no estado atual do tabuleiro do jogo
+    for (int i = 0; i < tabuleiro.length; i++) {
+        for (int j = 0; j < tabuleiro[i].length; j++) {
+            if (tabuleiro[i][j] == 'O') {
+                botoes[i][j].setText("O");
+            } else if (tabuleiro[i][j] == 'X') {
+                botoes[i][j].setText("X");
+            } else {
+                botoes[i][j].setText(""); // Caso o espaço esteja vazio
             }
         }
+    }
+}  
+    
+    
+   public void inicializarJogo() {
+    // Inicializa o tabuleiro do jogo
+    jogo = new jogo();
 
-        jogador = 0;
-        
+    jogador = 0;
+
         bt00.setText("");
         bt01.setText("");
         bt02.setText("");
@@ -49,89 +84,61 @@ public class JogodaVelha extends javax.swing.JFrame {
         bt20.setText("");
         bt21.setText("");
         bt22.setText("");
-    }
-    
-    public boolean validar(int x, int y){
-        if(jVelha[x][y] == -1){
-            return true;
-        }
 
-        return false;
-    }
-    
-    public void trocarJogador(){
-        if(jogador == 0){
-            jogador = 1;
-        }else{
-            jogador = 0;
-        }
-    }
-    
-   public int verificarGanhador() {
-    // Verificar linhas, colunas e diagonais para jogador O (0) e jogador X (1)
-    for (int jogador = 0; jogador <= 1; jogador++) {
-        // Verificar linhas
-        for (int i = 0; i < 3; i++) {
-            if (jVelha[i][0] == jogador && jVelha[i][1] == jogador && jVelha[i][2] == jogador) {
-                return jogador; // Vitória na linha
-            }
-        }
+    // ... Repete o processo para os outros botões
 
-        // Verificar colunas
-        for (int j = 0; j < 3; j++) {
-            if (jVelha[0][j] == jogador && jVelha[1][j] == jogador && jVelha[2][j] == jogador) {
-                return jogador; // Vitória na coluna
-            }
-        }
+    // Adiciona os botões ao layout (ou painel, se aplicável)
+    // ...
 
-        // Verificar diagonais
-        if (jVelha[0][0] == jogador && jVelha[1][1] == jogador && jVelha[2][2] == jogador) {
-            return jogador; // Vitória na diagonal principal
-        }
-        if (jVelha[0][2] == jogador && jVelha[1][1] == jogador && jVelha[2][0] == jogador) {
-            return jogador; // Vitória na diagonal secundária
-        }
-    }
-
-    // Verificar empate
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            if (jVelha[i][j] == -1) {
-                return -1; // Jogo em andamento
-            }
-        }
-    }
-
-    return 2; // Empate
+    // Atualiza a interface com base no estado atual do tabuleiro
+    atualizarInterface();
 }
 
     
     public void exibirGanhador(int ganhador){
         JOptionPane.showMessageDialog(this, (ganhador == 0?"Ganhador é a O": "Ganhador é o X"), "Ganhador", JOptionPane.INFORMATION_MESSAGE);
-        inicializarVariaveis();
+        inicializarJogo();
     }
 
     public void exibirFimdeJogo(){
         JOptionPane.showMessageDialog(this, "Ninguém ganhou.", "Ganhador", JOptionPane.INFORMATION_MESSAGE);
-        inicializarVariaveis();
+        inicializarJogo();
     }
     
-    public void marcarJogada(int x, int y, JButton bt){
-        int ganhador;
+    
+    
+    public void marcarJogada(int x, int y, JButton bt) {
+    try {
+        if (jogo.fazerJogada(x, y)) {
+            dout.writeUTF("JOGADA:" + x + "," + y);
+            dout.flush();
+            
+            String response = din.readUTF();
+            
+            if (response.startsWith("JOGADA:")) {
+                // Atualiza a interface com a jogada recebida do servidor
+                String[] parts = response.split(":")[1].split(",");
+                int jogadaX = Integer.parseInt(parts[0]);
+                int jogadaY = Integer.parseInt(parts[1]);
 
-        jVelha[x][y] = jogador;
-        bt.setText((jogador == 0? "O":"X"));
-        
-        ganhador = verificarGanhador();
+                // Atualiza a interface com a jogada recebida do servidor
+                int[][] tabuleiro = jogo.getTabuleiro();
+                int simbolo = tabuleiro[jogadaX][jogadaY];
+                botoes[jogadaX][jogadaY].setText(Character.toString(simbolo));
 
-        if(ganhador == -1){
-            trocarJogador();
-        }else if(ganhador == 0 || ganhador == 1){
-            exibirGanhador(ganhador);
-        }else{
-            exibirFimdeJogo();
+                // Verifica o resultado do jogo (vitória, empate, etc.)
+                int resultado = jogo.verificarVencedor();
+                if (resultado == 0 || resultado == 1) {
+                    exibirGanhador(resultado);
+                } else if (resultado == 2) {
+                    exibirFimdeJogo();
+                }
+            }
         }
+    } catch (IOException e) {
+        e.printStackTrace();
     }
+}
     
     /**
      * This method is called from within the constructor to initialize the form.
@@ -309,81 +316,45 @@ public class JogodaVelha extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void bt20ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt20ActionPerformed
-        int x = 2;
-        int y = 0;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+
     }//GEN-LAST:event_bt20ActionPerformed
 
     private void bt00ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt00ActionPerformed
-        int x = 0;
-        int y = 0;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(0, 0, (JButton) evt.getSource());
     }//GEN-LAST:event_bt00ActionPerformed
 
     private void bt01ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt01ActionPerformed
-        int x = 0;
-        int y = 1;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(0, 1, (JButton) evt.getSource());   
     }//GEN-LAST:event_bt01ActionPerformed
 
     private void bt02ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt02ActionPerformed
-        int x = 0;
-        int y = 2;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(0, 2, (JButton) evt.getSource());
     }//GEN-LAST:event_bt02ActionPerformed
 
     private void bt10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt10ActionPerformed
-        int x = 1;
-        int y = 0;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(1, 0, (JButton) evt.getSource());
     }//GEN-LAST:event_bt10ActionPerformed
 
     private void bt11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt11ActionPerformed
-        int x = 1;
-        int y = 1;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(1, 1, (JButton) evt.getSource());
     }//GEN-LAST:event_bt11ActionPerformed
 
     private void bt12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt12ActionPerformed
-        int x = 1;
-        int y = 2;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(1, 2, (JButton) evt.getSource());
     }//GEN-LAST:event_bt12ActionPerformed
 
     private void bt21ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt21ActionPerformed
-        int x = 2;
-        int y = 1;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(2, 1, (JButton) evt.getSource());
     }//GEN-LAST:event_bt21ActionPerformed
 
     private void bt22ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_bt22ActionPerformed
-        int x = 2;
-        int y = 2;
-        if(validar(x, y)){
-            marcarJogada(x, y, (JButton)evt.getSource());
-        }
+        marcarJogada(2, 2, (JButton) evt.getSource());
     }//GEN-LAST:event_bt22ActionPerformed
 
     /**
      * @param args the command line arguments
      */
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
         /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
@@ -413,8 +384,34 @@ public class JogodaVelha extends javax.swing.JFrame {
                 new JogodaVelha().setVisible(true);
             }
         });
-    }
+           
+        new Thread(() -> {
+           try {
+                s = new Socket("localhost", 1234);
+                din = new DataInputStream(s.getInputStream());
+                dout = new DataOutputStream(s.getOutputStream());
+               while (true) {
+                   String msgin = din.readUTF();
+                   if (msgin != null && !msgin.isEmpty()) {
+                       if (msgin.startsWith("JOGADA:")) {
+                           // Extrai as coordenadas da mensagem recebida
+                           String[] parts = msgin.split(":")[1].split(",");
+                           int x = Integer.parseInt(parts[0]);
+                           int y = Integer.parseInt(parts[1]);
 
+                           dout.writeUTF("JOGADA:" + x + "," + y);
+                           // Imprime a posição escolhida
+                           System.out.println("Posição escolhida: (" + x + ", " + y + ")");
+                       } 
+                   }
+               }
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+       }).start();
+        
+    }
+ 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton bt00;
     private javax.swing.JButton bt01;
